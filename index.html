@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title>跨浏览器js</title>
+
+		<body>
+			<script>
+				//跨浏览器的事件处理程序
+				//	定义EventUtil对象，用来处理浏览器间的差异。要保证处理事件的代码能在大多数浏览器下一致地运行，只需关注冒泡阶段
+				var EventUtil = {
+					//首先会检测传入的元素中是否存在DOM2级方法。如果存在DOM2级方法，则使用该方法：传入事件类型、时间处理程序函数和第三个参数false（表示冒泡阶段）。如果存在的是IE的方法，则采取第二种方案。最后一种可能就是使用DOM0级方法。没有考虑IE中的作用域问题。
+					addHandler: function(element, type, handler) {
+						if(element.addEventListenter) {
+							element.addEventListener(type, handler, false);
+						} else if(element.attachEvent) {
+							element.attachEvent('on' + type, handler);
+						} else {
+							element['on' + type] = handler;
+						}
+					},
+					getEvent: function(event) {
+						//返回对event对象的引用
+						return event ? event : window.event;
+					},
+					getTarget: function(event) {
+						//返回事件的目标
+						return event.target || event.srcElement;
+					},
+					preventDefault: function(event) {
+						//取消事件的默认行为
+						if(event.preventDefault) {
+							event.preventDefault();
+						} else {
+							event.returnValue = false;
+						}
+					},
+					removeHandler: function(element, type, handler) {
+						//原理同addHandler
+						if(element.removeEventListener) {
+							element.removeEventListener(type, handler, false);
+						} else if(element.detachEvent) {
+							element.detachEvent('on' + type, handler);
+						} else {
+							element['on' + type] = null;
+						}
+					},
+					stopPropagetion: function(event) {
+						//阻止事件流(事件冒泡)
+						if(event.stopPropagetion) {
+							event.stopPropagetion();
+						} else {
+							event.cancelBubble = true;
+						}
+					},
+					getRelatedTarget: function(event) {
+						//DOM通过event对象的relatedTarget属性提供了相关元素的信息。这个属性只对于mouseover和mouseout事件才包含值；对于其他事件，这个属性的值是null。
+						if(event.relatedTarget) {
+							return event.relatedTarget;
+						} else if(event.toElement) {
+							return event.toElement;
+						} else if(event.formElement) {
+							return event.formElement;
+						} else {
+							return null;
+						}
+					},
+					getButton: function(event) {
+						//通过检测'MouseEvents'这个特性，就可以确定event对象中存在的button属性中是否包含正确的值。如果测试失败，说明是IE，就必须对相应的值进行规范化。
+						if(document.implementation.hasFeater('MouseEvents', '2.0')) {
+							return event.button;
+						} else {
+							switch(event.button) {
+								case 0:
+								case 1:
+								case 3:
+								case 5:
+								case 7:
+									return 0;
+								case 2:
+								case 6:
+									return 2;
+								case 4:
+									return 1;
+
+							}
+						}
+					},
+					getWheelDelta: function(event) {
+						//getWheelDelta()方法首先检测了事件对象是否包含wheelDelta属性，如果是则通过浏览器监测代码确定正确的值。如果wheelDelta不存在，则假设相应的值保存在detail属性中。由于Firefox的值有所不同，因此首先要将这个值的符号反向，然后再乘以40，就可以保证与其他浏览器的值相同了。有了这个方法之后，就可以将相同的事件处理程序指定给mousewheel和DOMMouseScroll事件了。
+						if(event.wheelDelta) {
+							return(client.engine.opera && client.engine.opera < 9.5 ? -event.wheelDelta : event.wheelDelta);
+						} else {
+							return -event.detail * 40;
+						}
+					},
+					getCharcode: function(event) {
+						//首先检测charCode属性是否包含数值（在不支持这个属性的浏览器中，值为underfined），如果是，则返回该值。否则，就返回keyCode属性值。
+						if(typeof event.charCode == 'number') {
+							return event.charCode;
+						} else {
+							return event.keyCode;
+						}
+					}
+				}
+				console.log(EventUtil);
+			</script>
+		</body>
+
+</html>
